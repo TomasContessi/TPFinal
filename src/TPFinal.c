@@ -123,7 +123,7 @@ yn+1 =yn + 1/6*(k1 +2*k2 + 2*k3 + k4)
 
 seteo del metodo (parametros de la atmosfera y la municion se setean por separado)*/
 
-float h=0.1;            		// paso del metodo
+float h=0.01;            		// paso del metodo
 float X=parametros[PIX_P];     // posicion inicial x
 float Y=parametros[PIY_P];     // posicion inicial y
 float Z=parametros[PIZ_P];     // posicion inicial z
@@ -172,14 +172,14 @@ float  k4y=0;
 float  k4z=0;
 
 // resuelvo el sistema
-
+gpioWrite( LED2, ON );
 
 while (Y >= posy && i <= N) {
 
     i++;
     //cuento el tiempo
     T = T + h;
-
+    gpioWrite( LED3, ON );
     //calculo los k1
     k1x=h*Fx(Vx,Vy,Vz,parametros);
     k1y=h*Fy(Vx,Vy,Vz,parametros);
@@ -188,6 +188,8 @@ while (Y >= posy && i <= N) {
     k2x=h*Fx((Vx+k1x/2),(Vy+k1y/2),(Vz+k1z/2),parametros);
     k2y=h*Fy((Vx+k1x/2),(Vy+k1y/2),(Vz+k1z/2),parametros);
     k2z=h*Fz((Vx+k1x/2),(Vy+k1y/2),(Vz+k1z/2),parametros);
+
+    gpioWrite( LED3, OFF );
     //calculo los k3
     k3x=h*Fx((Vx+k2x/2),(Vy+k2y/2),(Vz+k2z/2),parametros);
     k3y=h*Fy((Vx+k2x/2),(Vy+k2y/2),(Vz+k2z/2),parametros);
@@ -199,11 +201,11 @@ while (Y >= posy && i <= N) {
 
     //clculo el siguiente paso
 
-    Vx =Vx + 1/6*(k1x +2*k2x + 2*k3x + k4x);
+    Vx =Vx + (k1x +2*k2x + 2*k3x + k4x)/6;
 
-    Vy =Vy + 1/6*(k1y +2*k2y + 2*k3y + k4y);
+    Vy =Vy + (k1y +2*k2y + 2*k3y + k4y)/6;
 
-    Vz =Vz + 1/6*(k1z +2*k2z + 2*k3z + k4z);
+    Vz =Vz + (k1z +2*k2z + 2*k3z + k4z)/6;
 
     //voy integrando para ir obteniendo las posiciones
 
@@ -225,17 +227,19 @@ posz=Velociad_objetivo_z*T+posz;
 
 //guardo lo que calcule en el puntero que le pase
 
-*impacto[X_I]=X;
-*impacto[Y_I]=Y;
-*impacto[Z_I]=Z;
-*impacto[T_I]=T;
+*(impacto[X_I])=X;
+*(impacto[Y_I])=Y;
+*(impacto[Z_I])=Z;
+*(impacto[T_I])=T;
 
-*impacto[XT_I]=posx;
-*impacto[YT_I]=posy;
-*impacto[ZT_I]=posz;
+*(impacto[XT_I])=posx;
+*(impacto[YT_I])=posy;
+*(impacto[ZT_I])=posz;
 
-*impacto[VF_I]=sqrt(Vx*Vx+Vy*Vy+Vz*Vz);
-*impacto[AF_I]=atan2(Vy,sqrt(Vx*Vx+Vz*Vz))*(360/(2*pi));
+*(impacto[VF_I])=sqrt(Vx*Vx+Vy*Vy+Vz*Vz);
+*(impacto[AF_I])=atan2(Vy,sqrt(Vx*Vx+Vz*Vz))*(360/(2*pi));
+
+gpioWrite( LED2, OFF );
 
 if (i==N){
 	return 1;
@@ -252,6 +256,19 @@ int apuntar(float *alfa, float *beta,float parametros[], float distancia, float 
 
 
 float *impacto[IMP_L];
+float impacto_var[IMP_L];
+
+impacto[X_I]=&impacto_var[X_I];
+impacto[Y_I]=&impacto_var[Y_I];
+impacto[Z_I]=&impacto_var[Z_I];
+impacto[T_I]=&impacto_var[T_I];
+
+impacto[XT_I]=&impacto_var[XT_I];
+impacto[YT_I]=&impacto_var[YT_I];
+impacto[ZT_I]=&impacto_var[ZT_I];
+
+impacto[VF_I]=&impacto_var[VF_I];
+impacto[AF_I]=&impacto_var[AF_I];
 
 float distancia_impacto=0;
 float angulo_impacto=0;
@@ -265,6 +282,7 @@ float amax_beta=180;
 float amin_beta=-180;
 
 
+
 // programa
 
 int M=100;          //cantidad maxima de iteraciones
@@ -272,9 +290,11 @@ int M=100;          //cantidad maxima de iteraciones
 float err=distancia;
 int i=0;
 
+gpioWrite( LED1, ON );
+
+while (err >= 0.01*distancia && i<M){
 
 
-while (err >= 0.1*distancia && i<M){
 
     *alfa = (amax_alfa+amin_alfa)/2;
     *beta = (amax_beta+amin_beta)/2;
@@ -309,6 +329,8 @@ while (err >= 0.1*distancia && i<M){
     i++;
     }
 
+gpioWrite( LED1, OFF );
+
 if(i==M){
 	return 1;
 	}
@@ -325,8 +347,8 @@ int main(void){
 
 	//parametros del disparo
 
-	float distancia=2.6e3;      //distancia al objetivo (en el suelo)(respecto a mi)(max 26km)
-	float direccion=120;       //direccion del objetivo (respecto a mi)(entre -180° y 180°)
+	float distancia=10000;      //distancia al objetivo (en el suelo)(respecto a mi)(max 26km)
+	float direccion=0;       //direccion del objetivo (respecto a mi)(entre -180° y 180°)
 	float altura=0;            //el objetivo tiene que estar debajo de la altura de mi torreta (default 0m se puede modificar en calcular_impacto.m siendo la posicion de la torreta (respecto al puente) x0,y0,z0)
 
 	//parametros del objetivo
@@ -382,13 +404,14 @@ int main(void){
 	parametros[PIZ_P]=0;
 
 	//comienzo a resolver
-	while (1){
+
 
 	float alfa=0;
 	float beta=0;
-
+	gpioWrite( LEDB, ON );
 	apuntar(&alfa, &beta,parametros,distancia,direccion);
-	}
+	gpioWrite( LEDB, OFF );
+
 }
 
 /*==================[end of file]============================================*/
