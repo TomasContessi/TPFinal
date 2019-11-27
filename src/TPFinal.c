@@ -43,6 +43,9 @@
 
 #define IMP_L 9
 
+#define SERVO_0   SERVO0
+#define SERVO_1   SERVO1
+
 /*==================[funciones]=================================*/
 
 // funciones de fuerzas
@@ -347,8 +350,8 @@ int main(void){
 
 	//parametros del disparo
 
-	float distancia=10000;      //distancia al objetivo (en el suelo)(respecto a mi)(max 26km)
-	float direccion=0;       //direccion del objetivo (respecto a mi)(entre -180° y 180°)
+	float distancia=20000;      //distancia al objetivo (en el suelo)(respecto a mi)(max 26km)
+	float direccion=90;       //direccion del objetivo (respecto a mi)(entre -180° y 180°)
 	float altura=0;            //el objetivo tiene que estar debajo de la altura de mi torreta (default 0m se puede modificar en calcular_impacto.m siendo la posicion de la torreta (respecto al puente) x0,y0,z0)
 
 	//parametros del objetivo
@@ -408,9 +411,39 @@ int main(void){
 
 	float alfa=0;
 	float beta=0;
-	gpioWrite( LEDB, ON );
+
+	   boardConfig();
+
+	   bool_t valor = 0;
+
+	   uint8_t servoAngle = 0; // 0 a 180 grados
+
+	   // Configurar Servo
+	   valor = servoConfig( 0, SERVO_ENABLE );
+
+	   valor = servoConfig( SERVO_0, SERVO_ENABLE_OUTPUT );
+
+	   // Usar Servo
+	   valor = servoWrite( SERVO_0, servoAngle );
+	   servoAngle = servoRead( SERVO_0 );
+
+
+
+	   valor = servoConfig( SERVO_1, SERVO_ENABLE_OUTPUT );
+
+	   // Usar Servo
+	   valor = servoWrite( SERVO_1, servoAngle );
+	   servoAngle = servoRead( SERVO_1 );
+
+		servoWrite( SERVO_0, 0);
+		servoWrite( SERVO_1, 0 );
+
 	apuntar(&alfa, &beta,parametros,distancia,direccion);
-	gpioWrite( LEDB, OFF );
+
+
+
+	servoWrite( SERVO_0, (uint16_t) alfa );
+	servoWrite( SERVO_1,(uint16_t) beta );
 
 }
 

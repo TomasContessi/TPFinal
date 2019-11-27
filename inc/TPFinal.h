@@ -40,6 +40,7 @@
 #include "sapi_tick.h"                   // Use Systick peripheral
 #include "sapi_gpio.h"                   // Use GPIO peripherals
 #include "sapi_uart.h"                   // Use UART peripherals
+#include "sapi.h"
 #include "sapi_delay.h"
 
 #endif
