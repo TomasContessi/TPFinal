@@ -13,13 +13,13 @@
 #define STEPS_GIRO 180 //pasos para girar 180 grados del motor de la base
 #define STEPS_ELEV 180 //lo mismo pero para la otra
 
-#define EN alguna //patita para enable
-#define S_ELEV alguna //patita para elevacion
-#define S_GIRO alguna //patita para giro
-#define DIR_ELEV alguna
-#define DIR_GIRO alguna
-#define LIM_GIRO alguna
-#define LIM_ELEV alguna
+#define EN GPIO0 //patita para enable
+#define S_ELEV GPIO1 //patita para elevacion
+#define S_GIRO GPIO2 //patita para giro
+#define DIR_ELEV GPIO3
+#define DIR_GIRO GPIO4
+#define LIM_GIRO GPIO5
+#define LIM_ELEV GPIO6
 
 #define DEM_RETURN 100
 #define DEM_WORK 10
@@ -279,91 +279,92 @@ else{
 int apuntar(float *alfa, float *beta,float parametros[], float distancia, float direccion){
 
 
-float *impacto[IMP_L];
-float impacto_var[IMP_L];
+	float *impacto[IMP_L];
+	float impacto_var[IMP_L];
 
-impacto[X_I]=&impacto_var[X_I];
-impacto[Y_I]=&impacto_var[Y_I];
-impacto[Z_I]=&impacto_var[Z_I];
-impacto[T_I]=&impacto_var[T_I];
+	impacto[X_I]=&impacto_var[X_I];
+	impacto[Y_I]=&impacto_var[Y_I];
+	impacto[Z_I]=&impacto_var[Z_I];
+	impacto[T_I]=&impacto_var[T_I];
 
-impacto[XT_I]=&impacto_var[XT_I];
-impacto[YT_I]=&impacto_var[YT_I];
-impacto[ZT_I]=&impacto_var[ZT_I];
+	impacto[XT_I]=&impacto_var[XT_I];
+	impacto[YT_I]=&impacto_var[YT_I];
+	impacto[ZT_I]=&impacto_var[ZT_I];
 
-impacto[VF_I]=&impacto_var[VF_I];
-impacto[AF_I]=&impacto_var[AF_I];
+	impacto[VF_I]=&impacto_var[VF_I];
+	impacto[AF_I]=&impacto_var[AF_I];
 
-float distancia_impacto=0;
-float angulo_impacto=0;
+	float distancia_impacto=0;
+	float angulo_impacto=0;
 
 //parametros del cañon
 
-float amax_alfa=22;
-float amin_alfa=0;
+	float amax_alfa=22;
+	float amin_alfa=0;
 
-float amax_beta=180;
-float amin_beta=-180;
+	float amax_beta=180;
+	float amin_beta=-180;
 
 
 
 // programa
 
-int M=100;          //cantidad maxima de iteraciones
+	int M=100;          //cantidad maxima de iteraciones
 
-float err=distancia;
-int i=0;
+	float err=distancia;
+	int i=0;
 
-gpioWrite( LED1, ON );
+	gpioWrite( LED1, ON );
 
-while (err >= 0.01*distancia && i<M){
-
-
-
-    *alfa = (amax_alfa+amin_alfa)/2;
-    *beta = (amax_beta+amin_beta)/2;
-
-    if(calcular_impacto(*alfa,*beta,parametros,impacto)){
-    	return 1;
-    }
-
-    distancia_impacto=sqrt(pow(*impacto[X_I],2)+pow(*impacto[Z_I],2));
-
-    distancia=sqrt(pow(*impacto[XT_I],2)+pow(*impacto[ZT_I],2));
-
-    if (distancia_impacto > distancia){
-        amax_alfa=*alfa;
-    }
-    if (distancia_impacto < distancia){
-        amin_alfa=*alfa;
-    }
-
-    angulo_impacto=atan2(*impacto[X_I],*impacto[Z_I])*(360/(2*pi));
-    direccion=atan2(*impacto[XT_I],*impacto[ZT_I])*(360/(2*pi));
+	while (err >= 0.01*distancia && i<M){
 
 
-    if (angulo_impacto > direccion){
-        amax_beta=*beta;
-    }
-    if (angulo_impacto < direccion){
-        amin_beta=*beta;
-    }
 
-    err=sqrt(pow(*impacto[XT_I]-*impacto[X_I],2) + pow(*impacto[ZT_I]-*impacto[Z_I],2));
-    i++;
-    }
+    	*alfa = (amax_alfa+amin_alfa)/2;
+    	*beta = (amax_beta+amin_beta)/2;
 
-gpioWrite( LED1, OFF );
+    	if(calcular_impacto(*alfa,*beta,parametros,impacto)){
+    		return 1;
+    	}
 
-if(i==M){
+    	distancia_impacto=sqrt(pow(*impacto[X_I],2)+pow(*impacto[Z_I],2));
+
+    	distancia=sqrt(pow(*impacto[XT_I],2)+pow(*impacto[ZT_I],2));
+
+    	if (distancia_impacto > distancia){
+        	amax_alfa=*alfa;
+    	}
+    	if (distancia_impacto < distancia){
+        	amin_alfa=*alfa;
+    	}
+
+    	angulo_impacto=atan2(*impacto[X_I],*impacto[Z_I])*(360/(2*pi));
+    	direccion=atan2(*impacto[XT_I],*impacto[ZT_I])*(360/(2*pi));
+
+
+    	if (angulo_impacto > direccion){
+        	amax_beta=*beta;
+    	}
+    	if (angulo_impacto < direccion){
+    		amin_beta=*beta;
+    	}
+
+    	err=sqrt(pow(*impacto[XT_I]-*impacto[X_I],2) + pow(*impacto[ZT_I]-*impacto[Z_I],2));
+    	i++;
+    	}
+
+	gpioWrite( LED1, OFF );
+
+	if(i==M){
 	return 1;
 	}
+	return 0;
 }
 
 // apuntar con laser
 int apuntar_laser(float *alfa, float *beta,float parametros[], float distancia, float direccion){
-	*beta=atan2(parametros[POSX_P]-parametros[PIX_P],parametros[POSZ_P]-parametros[PIZ_P]);
-	*alfa=atan2(parametros[POSY_P]-parametros[PIY_P],distancia-sqrt(pow(parametros[POSX_P]-parametros[PIX_P],2)+pow(parametros[POSZ_P]-parametros[PIZ_P],2)));
+	*beta=atan2(parametros[POSX_P]-parametros[PIX_P],parametros[POSZ_P]-parametros[PIZ_P])*180/pi;
+	*alfa=atan2(parametros[POSY_P]-parametros[PIY_P],distancia-sqrt(pow(parametros[POSX_P]-parametros[PIX_P],2)+pow(parametros[POSZ_P]-parametros[PIZ_P],2)))*180/pi;
 	return 0;
 }
 
@@ -433,7 +434,10 @@ void mover_motores(float alfa,float beta,float *posgiro,float *poselev){
 		*poselev = *poselev + pasos_elev*180/STEPS_ELEV;
 	}
 
-	while (pasos_elev > 0 | pasos_giro > 0){
+	gpioWrite( DIR_GIRO, sentido_giro );
+	gpioWrite( DIR_ELEV, sentido_elev );
+
+	while ((pasos_elev > 0) | (pasos_giro > 0)){
 		if (pasos_elev > 0){
 			gpioWrite( S_ELEV, ON );
 			delay(DEM_WORK);
@@ -539,8 +543,8 @@ int main(void){
 	gpioConfig( S_GIRO, GPIO_OUTPUT );
 	gpioConfig( DIR_ELEV, GPIO_OUTPUT );
 	gpioConfig( DIR_GIRO, GPIO_OUTPUT );
-	gpioConfig( LIM_GIRO, GPIO_IMPUT );
-	gpioConfig( LIM_ELEV, GPIO_IMPUT );
+	gpioConfig( LIM_GIRO, GPIO_INPUT );
+	gpioConfig( LIM_ELEV, GPIO_INPUT );
 	uartConfig( UART_USB, 115200 );
 
 	uartWriteString( UART_USB, "ENABLE\r\n" );
