@@ -10,6 +10,27 @@
 
 #define pi 3.14159265359
 
+#define STEPS_GIRO 180 //pasos para girar 180 grados del motor de la base
+#define STEPS_ELEV 180 //lo mismo pero para la otra
+
+#define EN alguna //patita para enable
+#define S_ELEV alguna //patita para elevacion
+#define S_GIRO alguna //patita para giro
+#define DIR_ELEV alguna
+#define DIR_GIRO alguna
+#define LIM_GIRO alguna
+#define LIM_ELEV alguna
+
+#define DEM_RETURN 100
+#define DEM_WORK 10
+
+#define ENABLE 0 //lo que es el ean¿ble
+#define DISABLE 1
+#define UP_DIR_GIRO 1 //sentido de giro
+#define DOWN_DIR_GIRO 0 //sentido de giro
+#define UP_DIR_ELEV 1
+#define DOWN_DIR_ELEV 0
+
 #define VTX_P 1
 #define	VTY_P 2
 #define VTZ_P 3
@@ -339,14 +360,110 @@ if(i==M){
 	}
 }
 
+// apuntar con laser
+int apuntar_laser(float *alfa, float *beta,float parametros[], float distancia, float direccion){
+	*beta=atan2(parametros[POSX_P]-parametros[PIX_P],parametros[POSZ_P]-parametros[PIZ_P]);
+	*alfa=atan2(parametros[POSY_P]-parametros[PIY_P],distancia-sqrt(pow(parametros[POSX_P]-parametros[PIX_P],2)+pow(parametros[POSZ_P]-parametros[PIZ_P],2)));
+	return 0;
+}
 
+// contro de motores
+// disabe motors
+void disable_motors (){
+	gpioWrite( EN, DISABLE );
+	return;
+}
+//enable motors
+void enable_motors (float * posgiro,float * poselev){
+
+	*posgiro = -90;
+	*poselev = 0;
+
+	gpioWrite( EN, ENABLE );
+
+	gpioWrite( DIR_ELEV, DOWN_DIR_ELEV );
+	gpioWrite( DIR_GIRO, DOWN_DIR_GIRO );
+
+	while (gpioRead( LIM_GIRO )){
+		gpioWrite( S_GIRO, ON );
+		delay(DEM_RETURN);
+		gpioWrite( S_GIRO, OFF );
+		delay(DEM_RETURN);
+	}
+	while (gpioRead( LIM_ELEV )){
+		gpioWrite( S_ELEV, ON );
+		delay(DEM_RETURN);
+		gpioWrite( S_ELEV, OFF );
+		delay(DEM_RETURN);
+	}
+	return;
+}
+
+//mover motores
+void mover_motores(float alfa,float beta,float *posgiro,float *poselev){
+
+	float distancia_giro = alfa - *posgiro;
+	float distancia_elev = beta - *poselev;
+	float sentido_giro = UP_DIR_GIRO;
+	float sentido_elev = UP_DIR_ELEV;
+	int pasos_elev = 0;
+	int pasos_giro = 0;
+
+	if (distancia_giro < 0){
+		distancia_giro = -distancia_giro;
+		sentido_giro = DOWN_DIR_GIRO;
+	}
+	if (distancia_elev < 0){
+		distancia_elev = -distancia_elev;
+		sentido_elev = DOWN_DIR_ELEV;
+	}
+	pasos_elev = distancia_elev * STEPS_ELEV / 180;
+	pasos_giro = distancia_giro * STEPS_GIRO / 180;
+
+	if (alfa - *posgiro <0 ){
+		*posgiro = *posgiro - pasos_giro*180/STEPS_GIRO;
+	}
+	else{
+		*posgiro = *posgiro + pasos_giro*180/STEPS_GIRO;
+	}
+	if (beta - *poselev <0 ){
+		*poselev = *poselev - pasos_elev*180/STEPS_ELEV;
+	}
+	else{
+		*poselev = *poselev + pasos_elev*180/STEPS_ELEV;
+	}
+
+	while (pasos_elev > 0 | pasos_giro > 0){
+		if (pasos_elev > 0){
+			gpioWrite( S_ELEV, ON );
+			delay(DEM_WORK);
+			gpioWrite( S_ELEV, OFF );
+			delay(DEM_WORK);
+			pasos_elev =pasos_elev-1;
+		}
+		if (pasos_giro > 0){
+			gpioWrite( S_GIRO, ON );
+			delay(DEM_WORK);
+			gpioWrite( S_GIRO, OFF );
+			delay(DEM_WORK);
+			pasos_giro =pasos_giro-1;
+		}
+		if (!gpioRead( LIM_GIRO )){
+			pasos_giro=0;
+			*posgiro=-90;
+		}
+		if (!gpioRead( LIM_ELEV )){
+			pasos_elev=0;
+			*poselev=0;
+		}
+	}
+	return;
+}
 
 
 
 /*===============================[main]=====================================*/
 int main(void){
-
-	boardConfig();
 
 	//parametros del disparo
 
@@ -412,38 +529,38 @@ int main(void){
 	float alfa=0;
 	float beta=0;
 
-	   boardConfig();
+	float posgiro=0;
+	float poselev=0;
 
-	   bool_t valor = 0;
+	boardConfig();
 
-	   uint8_t servoAngle = 0; // 0 a 180 grados
+	gpioConfig( EN, GPIO_OUTPUT );
+	gpioConfig( S_ELEV, GPIO_OUTPUT );
+	gpioConfig( S_GIRO, GPIO_OUTPUT );
+	gpioConfig( DIR_ELEV, GPIO_OUTPUT );
+	gpioConfig( DIR_GIRO, GPIO_OUTPUT );
+	gpioConfig( LIM_GIRO, GPIO_IMPUT );
+	gpioConfig( LIM_ELEV, GPIO_IMPUT );
+	uartConfig( UART_USB, 115200 );
 
-	   // Configurar Servo
-	   valor = servoConfig( 0, SERVO_ENABLE );
+	uartWriteString( UART_USB, "ENABLE\r\n" );
 
-	   valor = servoConfig( SERVO_0, SERVO_ENABLE_OUTPUT );
+	enable_motors (&posgiro,&poselev);
 
-	   // Usar Servo
-	   valor = servoWrite( SERVO_0, servoAngle );
-	   servoAngle = servoRead( SERVO_0 );
-
-
-
-	   valor = servoConfig( SERVO_1, SERVO_ENABLE_OUTPUT );
-
-	   // Usar Servo
-	   valor = servoWrite( SERVO_1, servoAngle );
-	   servoAngle = servoRead( SERVO_1 );
-
-		servoWrite( SERVO_0, 0);
-		servoWrite( SERVO_1, 0 );
-
+	uartWriteString( UART_USB, "CALCULANDO\r\n" );
 	apuntar(&alfa, &beta,parametros,distancia,direccion);
 
+	uartWriteString( UART_USB, "LOS ANGULOS SON:\r\n" );
+	uartWriteString( UART_USB, "ALFA:\r\n" );
+	stdioPrintf(UART_USB, "%s\n", alfa);
+	uartWriteString( UART_USB, "BETA\r\n" );
+	stdioPrintf(UART_USB, "%s\n", beta);
+	mover_motores(alfa,beta,&posgiro,&poselev);
+	delay(1000);
+	uartWriteString( UART_USB, "DISABLE\r\n" );
+	disable_motors();
 
 
-	servoWrite( SERVO_0, (uint16_t) alfa );
-	servoWrite( SERVO_1,(uint16_t) beta );
 
 }
 
