@@ -10,8 +10,8 @@
 
 #define pi 3.14159265359
 
-#define STEPS_GIRO 180 //pasos para girar 180 grados del motor de la base
-#define STEPS_ELEV 180 //lo mismo pero para la otra
+#define STEPS_GIRO 400 //pasos para girar 180 grados del motor de la base
+#define STEPS_ELEV 750 //lo mismo pero para la otra
 
 #define EN GPIO0 //patita para enable
 #define S_ELEV GPIO1 //patita para elevacion
@@ -21,15 +21,15 @@
 #define LIM_GIRO GPIO5
 #define LIM_ELEV GPIO6
 
-#define DEM_RETURN 100
-#define DEM_WORK 10
+#define DEM_RETURN 10
+#define DEM_WORK 5
 
 #define ENABLE 0 //lo que es el ean¿ble
 #define DISABLE 1
 #define UP_DIR_GIRO 1 //sentido de giro
 #define DOWN_DIR_GIRO 0 //sentido de giro
-#define UP_DIR_ELEV 1
-#define DOWN_DIR_ELEV 0
+#define UP_DIR_ELEV 0
+#define DOWN_DIR_ELEV 1
 
 #define VTX_P 1
 #define	VTY_P 2
@@ -378,7 +378,7 @@ void disable_motors (){
 void enable_motors (float * posgiro,float * poselev){
 
 	*posgiro = -90;
-	*poselev = 0;
+	*poselev = -10;
 
 	gpioWrite( EN, ENABLE );
 
@@ -403,8 +403,8 @@ void enable_motors (float * posgiro,float * poselev){
 //mover motores
 void mover_motores(float alfa,float beta,float *posgiro,float *poselev){
 
-	float distancia_giro = alfa - *posgiro;
-	float distancia_elev = beta - *poselev;
+	float distancia_giro = beta - *posgiro;
+	float distancia_elev = alfa - *poselev;
 	float sentido_giro = UP_DIR_GIRO;
 	float sentido_elev = UP_DIR_ELEV;
 	int pasos_elev = 0;
@@ -421,13 +421,13 @@ void mover_motores(float alfa,float beta,float *posgiro,float *poselev){
 	pasos_elev = distancia_elev * STEPS_ELEV / 180;
 	pasos_giro = distancia_giro * STEPS_GIRO / 180;
 
-	if (alfa - *posgiro <0 ){
+	if (beta - *posgiro <0 ){
 		*posgiro = *posgiro - pasos_giro*180/STEPS_GIRO;
 	}
 	else{
 		*posgiro = *posgiro + pasos_giro*180/STEPS_GIRO;
 	}
-	if (beta - *poselev <0 ){
+	if (alfa - *poselev <0 ){
 		*poselev = *poselev - pasos_elev*180/STEPS_ELEV;
 	}
 	else{
@@ -452,14 +452,14 @@ void mover_motores(float alfa,float beta,float *posgiro,float *poselev){
 			delay(DEM_WORK);
 			pasos_giro =pasos_giro-1;
 		}
-		if (!gpioRead( LIM_GIRO )){
+	/*	if (!gpioRead( LIM_GIRO )){
 			pasos_giro=0;
 			*posgiro=-90;
 		}
 		if (!gpioRead( LIM_ELEV )){
 			pasos_elev=0;
 			*poselev=0;
-		}
+		}*/
 	}
 	return;
 }
@@ -552,16 +552,20 @@ int main(void){
 	enable_motors (&posgiro,&poselev);
 
 	uartWriteString( UART_USB, "CALCULANDO\r\n" );
-	apuntar(&alfa, &beta,parametros,distancia,direccion);
+	//(&alfa, &beta,parametros,distancia,direccion);
 
 	uartWriteString( UART_USB, "LOS ANGULOS SON:\r\n" );
 	uartWriteString( UART_USB, "ALFA:\r\n" );
 	stdioPrintf(UART_USB, "%s\n", alfa);
 	uartWriteString( UART_USB, "BETA\r\n" );
 	stdioPrintf(UART_USB, "%s\n", beta);
-	mover_motores(alfa,beta,&posgiro,&poselev);
-	delay(1000);
+	mover_motores(90,0,&posgiro,&poselev);
+	delay(500);
 	uartWriteString( UART_USB, "DISABLE\r\n" );
+	mover_motores(180,90,&posgiro,&poselev);
+	delay(500);
+	mover_motores(90,0,&posgiro,&poselev);
+	delay(500);
 	disable_motors();
 
 
