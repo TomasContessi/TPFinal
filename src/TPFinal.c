@@ -1,6 +1,11 @@
 
 
 
+
+#define LONG_RANGE 1
+#define SHORT_RANGE 2
+
+#define MODEL LONG_RANGE
 /*==================[inclusions]=============================================*/
 
 #include "TPFinal.h"
@@ -549,23 +554,23 @@ int main(void){
 
 	uartWriteString( UART_USB, "ENABLE\r\n" );
 
-	enable_motors (&posgiro,&poselev);
+	//enable_motors (&posgiro,&poselev);
 
 	uartWriteString( UART_USB, "CALCULANDO\r\n" );
-	//(&alfa, &beta,parametros,distancia,direccion);
-
+#if(MODEL==LONG_RANGE)
+	apuntar(&alfa, &beta,parametros,distancia,direccion);
+#endif
+#if(MODEL==SHORT_RANGE)
+	apuntar_laser(&alfa, &beta,parametros,distancia,direccion);
+#endif
 	uartWriteString( UART_USB, "LOS ANGULOS SON:\r\n" );
 	uartWriteString( UART_USB, "ALFA:\r\n" );
 	stdioPrintf(UART_USB, "%s\n", alfa);
 	uartWriteString( UART_USB, "BETA\r\n" );
 	stdioPrintf(UART_USB, "%s\n", beta);
-	mover_motores(90,0,&posgiro,&poselev);
+	mover_motores(alfa,beta,&posgiro,&poselev);
 	delay(500);
 	uartWriteString( UART_USB, "DISABLE\r\n" );
-	mover_motores(180,90,&posgiro,&poselev);
-	delay(500);
-	mover_motores(90,0,&posgiro,&poselev);
-	delay(500);
 	disable_motors();
 
 
