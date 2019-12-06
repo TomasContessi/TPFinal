@@ -1,3 +1,1 @@
-	# repositorio  del TP1 ...
-	
-	aca va la la documentacion
+	software, modelos 3d para hardware y programas de testeo para el tp final
